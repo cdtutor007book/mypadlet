@@ -52,8 +52,8 @@ if "camera_photo_captured" not in st.session_state:
     st.session_state.camera_photo_captured = None
 
 # 제목
-st.title("🎉 롤링페이퍼")
-st.markdown("친구들에게 하고 싶은 말을 메모로 남겨주세요! ✨")
+st.title("🎉 나소영 롤링페이퍼")
+st.markdown("소영이에게 하고 싶은 말을 메모로 남겨주세요! ✨")
 
 # 메모 입력 섹션
 st.markdown("---")
