@@ -154,6 +154,10 @@ with col_right:
 
 # 메모 표시 섹션
 st.markdown("---")
+
+# 실시간으로 최신 메모 로드 (다른 사용자의 추가된 메모 확인)
+st.session_state.memos = load_memos()
+
 st.subheader(f"💌 남겨진 메모 ({len(st.session_state.memos)}개)")
 
 if st.session_state.memos:
