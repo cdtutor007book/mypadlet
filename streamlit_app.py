@@ -6,6 +6,7 @@ import random
 import json
 import os
 import base64
+import time
 
 # 페이지 설정
 st.set_page_config(page_title="🎉 롤링페이퍼", layout="wide")
@@ -159,41 +160,57 @@ st.markdown("---")
 st.session_state.memos = load_memos()
 
 st.subheader(f"💌 남겨진 메모 ({len(st.session_state.memos)}개)")
+# 메모 표시 섹션
+st.markdown("---")
 
-if st.session_state.memos:
-    # 메모를 5개씩 한 줄에 표시
-    cols = st.columns(5)
-    
-    for idx, memo in enumerate(st.session_state.memos):
-        col_index = idx % 5
+# 실시간으로 최신 메모 로드 (다른 사용자의 추가된 메모 확인)
+st.session_state.memos = load_memos()
+
+st.subheader(f"💌 남겨진 메모 ({len(st.session_state.memos)}개)")
+
+# 자동 새로고침 기능 (3초마다)
+placeholder = st.empty()
+with placeholder.container():
+    if st.session_state.memos:
+        # 메모를 5개씩 한 줄에 표시
+        cols = st.columns(5)
         
-        with cols[col_index]:
-            with st.container():
-                # 삭제 버튼
-                if st.button("🗑️", key=f"delete_{idx}"):
-                    st.session_state.memos.pop(idx)
-                    save_memos(st.session_state.memos)  # 파일에 저장
-                    st.rerun()
-                
-                # 사진과 메모를 하나의 카드로
+        for idx, memo in enumerate(st.session_state.memos):
+            col_index = idx % 5
+            
+            with cols[col_index]:
                 with st.container():
-                    # 사진 표시
-                    if memo.get("photo"):
-                        # Base64로 인코딩된 사진 디코드
-                        try:
-                            photo_bytes = base64.b64decode(memo["photo"])
-                            st.image(photo_bytes, width='stretch')
-                        except:
-                            st.write("사진 로드 오류")
+                    # 삭제 버튼
+                    if st.button("🗑️", key=f"delete_{idx}"):
+                        st.session_state.memos.pop(idx)
+                        save_memos(st.session_state.memos)  # 파일에 저장
+                        st.rerun()
                     
-                    # 메모 내용 (랜덤 배경색 적용)
-                    memo_color = memo.get("color", "#667eea")
-                    st.markdown(f"""
-                        <div class="memo-box" style="background: linear-gradient(135deg, {memo_color} 0%, {memo_color}dd 100%); min-height: 140px; margin-top: -10px; border-radius: 0 0 10px 10px;">
-                            <div class="memo-name">💬 {memo['name']}</div>
-                            <div class="memo-text" style="font-size: 0.9em; line-height: 1.4;">{memo['text']}</div>
-                            <div class="memo-date">📅 {memo['timestamp']}</div>
-                        </div>
-                    """, unsafe_allow_html=True)
-else:
+                    # 사진과 메모를 하나의 카드로
+                    with st.container():
+                        # 사진 표시
+                        if memo.get("photo"):
+                            # Base64로 인코딩된 사진 디코드
+                            try:
+                                photo_bytes = base64.b64decode(memo["photo"])
+                                st.image(photo_bytes, width='stretch')
+                            except:
+                                st.write("사진 로드 오류")
+                        
+                        # 메모 내용 (랜덤 배경색 적용)
+                        memo_color = memo.get("color", "#667eea")
+                        st.markdown(f"""
+                            <div class="memo-box" style="background: linear-gradient(135deg, {memo_color} 0%, {memo_color}dd 100%); min-height: 140px; margin-top: -10px; border-radius: 0 0 10px 10px;">
+                                <div class="memo-name">💬 {memo['name']}</div>
+                                <div class="memo-text" style="font-size: 0.9em; line-height: 1.4;">{memo['text']}</div>
+                                <div class="memo-date">📅 {memo['timestamp']}</div>
+                            </div>
+                        """, unsafe_allow_html=True)
+    else:
+        st.info("아직 메모가 없습니다. 첫 번째 메모를 남겨주세요! 🌟")
+
+# 백그라운드에서 자동 새로고침
+auto_refresh_interval = st.sidebar.slider("자동 새로고침 (초)", 1, 10, 3, key="refresh_interval")
+time.sleep(auto_refresh_interval)
+st.rerun(
     st.info("아직 메모가 없습니다. 첫 번째 메모를 남겨주세요! 🌟")
