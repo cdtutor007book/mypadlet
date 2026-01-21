@@ -3,6 +3,9 @@ from datetime import datetime
 import io
 from PIL import Image
 import random
+import json
+import os
+import base64
 
 # 페이지 설정
 st.set_page_config(page_title="🎉 롤링페이퍼", layout="wide")
@@ -45,30 +48,52 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# 메모 파일 경로
+MEMOS_FILE = "memos.json"
+
+# JSON 파일에서 메모 로드
+def load_memos():
+    if os.path.exists(MEMOS_FILE):
+        try:
+            with open(MEMOS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            return []
+    return []
+
+# JSON 파일에 메모 저장
+def save_memos(memos):
+    with open(MEMOS_FILE, "w", encoding="utf-8") as f:
+        json.dump(memos, f, ensure_ascii=False, indent=2)
+
 # 세션 상태 초기화
 if "memos" not in st.session_state:
-    st.session_state.memos = []
-if "camera_photo_captured" not in st.session_state:
-    st.session_state.camera_photo_captured = None
+    st.session_state.memos = load_memos()
 
 # 제목
-st.title("🎉 나소영 롤링페이퍼")
-st.markdown("소영이에게 하고 싶은 말을 메모로 남겨주세요! ✨")
+st.title("🎉 롤링페이퍼")
+st.markdown("친구들에게 하고 싶은 말을 메모로 남겨주세요! ✨")
 
 # 메모 입력 섹션
 st.markdown("---")
+st.subheader("📝 메모 작성")
+
 col_left, col_right = st.columns([0.5, 0.5])
 
 # 왼쪽: 사진
 with col_left:
-    st.subheader("📸 사진추가")
+    st.subheader("📸 사진 추가")
+    st.write("**카메라로 촬영:**")
     camera_photo = st.camera_input("사진을 촬영해주세요", key="camera_input")
     
-    uploaded_photo = st.file_uploader("또는 사진 파일 선택", type=["png", "jpg", "jpeg"], key="photo_upload")
+    st.write("**또는 파일에서 업로드:**")
+    uploaded_photo = st.file_uploader("사진 파일 선택", type=["png", "jpg", "jpeg"], key="photo_upload")
     
     # 카메라 또는 업로드 사진 선택
     selected_photo = camera_photo if camera_photo else uploaded_photo
-
+    
+    # 사진 영역 높이를 맞추기 위한 공간 확보
+    st.write("")
 
 # 오른쪽: 이름과 메모 입력
 with col_right:
@@ -117,10 +142,11 @@ with col_right:
                     "name": author_name.strip(),
                     "text": memo_text.strip(),
                     "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                    "photo": photo_to_save,
+                    "photo": base64.b64encode(photo_to_save).decode() if photo_to_save else None,
                     "color": random_color
                 }
                 st.session_state.memos.insert(0, new_memo)
+                save_memos(st.session_state.memos)  # 파일에 저장
                 st.success("메모가 추가되었습니다! 🎉")
                 st.rerun()
             else:
@@ -142,13 +168,19 @@ if st.session_state.memos:
                 # 삭제 버튼
                 if st.button("🗑️", key=f"delete_{idx}"):
                     st.session_state.memos.pop(idx)
+                    save_memos(st.session_state.memos)  # 파일에 저장
                     st.rerun()
                 
                 # 사진과 메모를 하나의 카드로
                 with st.container():
                     # 사진 표시
                     if memo.get("photo"):
-                        st.image(memo["photo"], width='stretch')
+                        # Base64로 인코딩된 사진 디코드
+                        try:
+                            photo_bytes = base64.b64decode(memo["photo"])
+                            st.image(photo_bytes, width='stretch')
+                        except:
+                            st.write("사진 로드 오류")
                     
                     # 메모 내용 (랜덤 배경색 적용)
                     memo_color = memo.get("color", "#667eea")
